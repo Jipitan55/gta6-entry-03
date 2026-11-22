@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PORTO VERDE — Sunset Heist</title>
+  <style>
+    body, html {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: #0a0515;
+      font-family: system-ui, -apple-system, sans-serif;
+      color: #fff;
+      user-select: none;
+    }
+    #game {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+    .overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      background: rgba(10, 5, 21, 0.85);
+      z-index: 10;
+      transition: opacity 0.3s ease;
+    }
+    .overlay.hidden {
+      opacity: 0;
+      pointer-events: none;
+      display: none;
+    }
+    h1 {
+      font-size: 3.5rem;
+      margin: 0 0 10px 0;
+      background: linear-gradient(135deg, #ff3366, #ffaa00);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      text-shadow: 0 4px 20px rgba(255, 51, 102, 0.4);
+      letter-spacing: 2px;
+    }
+    h2 {
+      font-size: 1.5rem;
+      color: #ffaa00;
+      margin: 0 0 30px 0;
+      letter-spacing: 4px;
+      text-transform: uppercase;
+    }
+    .btn-group {
+      display: flex;
+      gap: 20px;
+    }
+    button {
+      background: linear-gradient(135deg, #ff3366, #cc0044);
+      border: none;
+      color: white;
+      padding: 14px 28px;
+      font-size: 1.1rem;
+      font-weight: bold;
+      border-radius: 8px;
+      cursor: pointer;
+      box-shadow: 0 4px 15px rgba(255, 51, 102, 0.4);
+      transition: transform 0.1s, box-shadow 0.1px;
+    }
+    button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(255, 51, 102, 0.6);
+    }
+    button:active {
+      transform: translateY(1px);
+    }
+    .controls-hint {
+      margin-top: 30px;
+      background: rgba(255, 255, 255, 0.05);
+      padding: 15px 25px;
+      border-radius: 8px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      font-size: 0.9rem;
+      line-height: 1.6;
+      color: #ccc;
+      text-align: center;
+    }
+    #hud {
+      position: absolute;
+      top: 20px;
+      left: 20px;
+      right: 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      z-index: 5;
+      pointer-events: none;
+    }
+    .hud-panel {
+      background: rgba(10, 5, 21, 0.7);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      padding: 12px 20px;
+      border-radius: 8px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+    }
+    .health-bar-container {
+      width: 150px;
+      height: 12px;
+      background: rgba(255,255,255,0.1);
+      border-radius: 6px;
+      overflow: hidden;
+      margin-top: 5px;
+    }
+    #health-fill {
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, #ff3366, #33cc66);
+      transition: width 0.2s;
+    }
+    .stat-row {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+      font-size: 1.2rem;
+      font-weight: bold;
+    }
+    #cash-val {
+      color: #33cc66;
+    }
+    #wanted-stars {
+      color: #ffaa00;
+      letter-spacing: 2px;
+    }
+    #objective-box {
+      position: absolute;
+      bottom: 25px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(10, 5, 21, 0.8);
+      border: 1px solid rgba(255, 170, 0, 0.3);
+      padding: 12px 30px;
+      border-radius: 8px;
+      text-align: center;
+      z-index: 5;
+      pointer-events: none;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+    }
+    #objective-title {
+      font-size: 0.8rem;
+      color: #ffaa00;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 2px;
+    }
+    #objective-text {
+      font-size: 1.1rem;
+      font-weight: bold;
+    }
+    #minimap-container {
+      position: absolute;
+      bottom: 25px;
+      right: 25px;
+      width: 160px;
+      height: 160px;
+      border-radius: 50%;
+      overflow: hidden;
+      border: 3px solid #ffaa00;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.7);
+      z-index: 5;
+      background: #111116;
+    }
+    #minimap-canvas {
+      width: 160px;
+      height: 160px;
+    }
+  </style>
+</head>
+<body>
+  <canvas id="game"></canvas>
+
+  <!-- HUD Overlay -->
+  <div id="hud">
+    <div class="hud-panel">
+      <div style="font-size: 0.8rem; color: #aaa;">HEALTH</div>
+      <div class="health-bar-container">
+        <div id="health-fill"></div>
+      </div>
+    </div>
+    <div class="hud-panel stat-row">
+      <div>CASH: <span id="cash-val">$500</span></div>
+      <div>WANTED: <span id="wanted-stars">☆☆☆☆☆</span></div>
+    </div>
+  </div>
+
+  <div id="objective-box">
+    <div id="objective-title">Current Objective</div>
+    <div id="objective-text">Explore Porto Verde. Find a vehicle or cruise the sunset streets.</div>
+  </div>
+
+  <div id="mission-banner" class="hidden" style="position: absolute; top: 20px; left: 50%; transform: translateX(-50%); background: rgba(10, 5, 21, 0.85); border: 2px solid #ffaa00; padding: 12px 30px; border-radius: 8px; text-align: center; z-index: 20; box-shadow: 0 4px 20px rgba(255,170,0,0.4);"></div>
+
+  <div id="minimap-container">
+    <canvas id="minimap-canvas" width="160" height="160"></canvas>
+  </div>
+
+  <!-- Start Screen -->
+  <div id="start-screen" class="overlay">
+    <h1>PORTO VERDE</h1>
+    <h2>Sunset Heist</h2>
+    <div class="btn-group">
+      <button id="btn-new-game">New Game</button>
+      <button id="btn-continue" style="background: linear-gradient(135deg, #3366cc, #113388);">Continue</button>
+    </div>
+    <div class="controls-hint">
+      <b>WASD / Arrows</b>: Move / Drive &nbsp;|&nbsp; <b>Shift</b>: Run &nbsp;|&nbsp; <b>E</b>: Enter / Exit Car<br>
+      <b>Mouse</b>: Orbit Camera &nbsp;|&nbsp; <b>P / Esc</b>: Pause &nbsp;|&nbsp; <b>M</b>: Mute
+    </div>
+  </div>
+
+  <!-- Pause Screen -->
+  <div id="pause-screen" class="overlay hidden">
+    <h1>PAUSED</h1>
+    <div class="btn-group" style="margin-top: 20px;">
+      <button id="btn-resume">Resume</button>
+      <button id="btn-quit" style="background: linear-gradient(135deg, #666, #333);">Main Menu</button>
+    </div>
+  </div>
+
+  <!-- End Screen -->
+  <div id="end-screen" class="overlay hidden">
+    <h1 id="end-title">BUSTED</h1>
+    <h2 id="end-subtitle">The law caught up with you.</h2>
+    <div class="btn-group" style="margin-top: 20px;">
+      <button id="btn-restart">Try Again</button>
+    </div>
+  </div>
+
+  <!-- Include Three.js UMD -->
+  <script src="./vendor/three.min.js"></script>
+  <!-- Main Game Entry -->
+  <script type="module" src="./src/main.js"></script>
+</body>
+</html>
